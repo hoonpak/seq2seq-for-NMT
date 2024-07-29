@@ -139,7 +139,7 @@ class Align:
     class location(nn.Module):
         def __init__(self, hidden_size):
             super(Align.location, self).__init__()
-            self.W_a = nn.Linear(hidden_size, config.MAX_LENGTH, bias=False)
+            self.W_a = nn.Linear(hidden_size, config.MAX_LENGTH+2, bias=False)
         
         def forward(self, encoder_outputs, output):
             """
