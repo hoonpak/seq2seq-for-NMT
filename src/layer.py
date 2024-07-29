@@ -21,7 +21,7 @@ class Encoder(nn.Module):
         emb = self.dropout(emb)
         packed_emb = pack_padded_sequence(emb, length, batch_first=True, enforce_sorted=False)
         packed_output, (h_n, c_n) = self.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
-        output, _ = pad_packed_sequence(packed_output, batch_first=True)
+        output, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=config.MAX_LENGTH+2)
         return output, h_n, c_n
     
     def initialization(self):
