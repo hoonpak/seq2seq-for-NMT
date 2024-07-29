@@ -51,8 +51,10 @@ print(f"System:{name} is ready!!")
 
 device = option.device
 
-training_src_path = "../dataset/training/training_en.txt"
-training_tgt_path = "../dataset/training/training_de.txt"
+training_src_path = "../dataset/training/np_training_en.txt"
+training_tgt_path = "../dataset/training/np_training_de.txt"
+# test_src_path = "../dataset/test/test_en_2014.txt"
+# test_tgt_path = "../dataset/test/test_de_2014.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
