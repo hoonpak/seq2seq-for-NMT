@@ -51,10 +51,8 @@ print(f"System:{name} is ready!!")
 
 device = option.device
 
-training_src_path = "../dataset/training/np_training_en.txt"
-training_tgt_path = "../dataset/training/np_training_de.txt"
-# test_src_path = "../dataset/test/test_en_2014.txt"
-# test_tgt_path = "../dataset/test/test_de_2014.txt"
+training_src_path = "../dataset/training/training_en.txt"
+training_tgt_path = "../dataset/training/training_de.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
@@ -76,35 +74,32 @@ test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle
 src_vocab_size = len(train_data.src_word2id)
 tgt_vocab_size = len(train_data.tgt_word2id)
 
-model = Seq2Seq(attn = option.attn, align = option.align, input_feeding = option.input_feeding, 
-                src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
-                num_layers = config.num_layers, dropout = dropout).to(device)
-
-model.initialization()
+model_info = torch.load(f"./save_model/{name}_CheckPoint.pth", map_location=device)
+model = model_info['model']
 with torch.no_grad():
     model.encoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
     model.decoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
+model.load_state_dict(model_info['model_state_dict'])
 
 loss_function = nn.CrossEntropyLoss(ignore_index = config.PAD).to(device)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = torch.optim.SGD(parameters, lr=config.start_lr)
+optimizer.load_state_dict(model_info['optimizer_state_dict'])
 
 writer = SummaryWriter(log_dir=f"./runs/{name}")
 st = time.time()
 train_loss = 0
 train_ppl = 0
 print("Start training!!")
-iter = 0
-for epoch in range(config.max_epoch):
+iter = 32248*(model_info['epoch']+1)
+for epoch in range(model_info['epoch']+1, config.max_epoch):
     for src, src_len, tgt in train_dataloader:
         # breakpoint()
         src = src.to(device)
-        # src_len = src_len.to(device)
         tgt = tgt.to(device)
         
         optimizer.zero_grad()
         predict = model.forward(src, src_len, tgt)
-        # loss = loss_function(predict, tgt[:,1:])
         loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
         nn.utils.clip_grad_norm_(parameters, max_norm=config.normalized_gradient)
@@ -129,10 +124,10 @@ for epoch in range(config.max_epoch):
             num = 0
             model.eval()
             with torch.no_grad():
-                for src, src_len, tgt in test_dataloader:
+                for src, tgt in test_dataloader:
                     src = src.to(device)
                     tgt = tgt.to(device)
-                    predict = model.forward(src, src_len, tgt)
+                    predict = model.forward(src, tgt)
                     loss = loss_function(predict, tgt[:,1:].reshape(-1))
                     test_cost += loss.detach().cpu().item()
                     test_ppl += torch.exp(loss.detach()).cpu().item()
@@ -145,18 +140,17 @@ for epoch in range(config.max_epoch):
             writer.flush()
             model.train()
         iter += 1
+    
     if (epoch+1) >= config.lr_update_point:
         optimizer.param_groups[0]['lr'] *= 0.5
     
     torch.save({'epoch': epoch,
+                'model': model,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'iter': iter,
+                'loss': train_loss,
                 }, f"./save_model/{name}_CheckPoint.pth")
     
-    # print("Start greedy search!!")
-    # greedy_predict = test_ins.greedy_search(model, device)
-    # greedy_bleu_score = test_ins.bleu_score(greedy_predict)
     print("Start beam search!!")
     beam_predict = test_ins.beam_search(model, device, beam_size=3)
     beam_bleu_score = test_ins.bleu_score(beam_predict)
