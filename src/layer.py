@@ -38,7 +38,7 @@ class Decoder(nn.Module):
         self.lstm_layer = nn.LSTM(hidden_size, hidden_size, num_layers=num_layers, dropout=dropout, batch_first=True)
         self.output_layer = nn.Linear(hidden_size, vocab_size, bias=False)
         
-    def forward(self, h_0, c_0, target = None):
+    def forward(self, encoder_outputs, h_0, c_0, target = None):
         """
         h_0            (num of layers, N, H)
         c_0            (num of layers, N, H)

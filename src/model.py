@@ -40,7 +40,7 @@ class Seq2Seq(nn.Module):
         
     def forward(self, src, src_len, tgt = None):
         encoder_output, decoder_h_0, decoder_c_0 = self.encoder(src, src_len)
-        decoder_output, _, _ = self.decoder(decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
+        decoder_output, _, _ = self.decoder(encoder_output, decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
         decoder_output = decoder_output.permute(0,2,1) #decoder output = N, V, L
         # decoder_output = decoder_output.reshape(-1, self.tgt_vocab_size) #decoder output = N*L, V
         return decoder_output
