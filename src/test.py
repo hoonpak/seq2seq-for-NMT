@@ -235,5 +235,5 @@ if __name__ == "__main__":
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
     print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
-    # test_ins.perplexity(model, option.device)
-    test_ins.perplexity_(model, option.device)
+    test_ins.perplexity(model, option.device)
+    # test_ins.perplexity_(model, option.device)
