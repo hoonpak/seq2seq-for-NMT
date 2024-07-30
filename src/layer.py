@@ -146,7 +146,8 @@ class Align:
             encoder_outputs  (N, L, H)
             output           (N, 1, H)
             """
-            align_score = F.softmax(self.W_a(output), dim=2) #N, 1, H -> N, 1, L
+            # align_score = F.softmax(self.W_a(output), dim=2) #N, 1, H -> N, 1, L
+            align_score = self.W_a(output).softmax(dim=2) #N, 1, H -> N, 1, L
             return align_score
         
         def initialization(self):
