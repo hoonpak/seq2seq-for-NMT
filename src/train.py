@@ -17,12 +17,14 @@ parser.add_argument("--dropout", action=argparse.BooleanOptionalAction, help='dr
 parser.add_argument("--input_feeding", action=argparse.BooleanOptionalAction, help='input feeding or not')
 parser.add_argument("--attn", choices=['global', 'local_m', 'local_p', 'no'])
 parser.add_argument("--align", choices=['dot', 'general', 'concat', 'location', 'no'])
+parser.add_argument("--name")
 parser.add_argument("--device")
 option = parser.parse_args()
 
 config.device = option.device
 
-name = "np_v2_base"
+# name = "np_v2_base"
+name = option.name
 
 if option.reverse:
     name += "_reverse"
