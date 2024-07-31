@@ -147,7 +147,9 @@ class Align:
             output           (N, 1, H)
             """
             # align_score = F.softmax(self.W_a(output), dim=2) #N, 1, H -> N, 1, L
-            align_score = self.W_a(output).softmax(dim=2) #N, 1, H -> N, 1, L
+            mask = encoder_outputs.mask_info.unsqueeze(1) #N, L -> N, 1, L
+            align_score = self.W_a(output).masked_fill(mask, -float('inf')) #N, 1, H -> N, 1, L
+            align_score = align_score.softmax(dim=2)
             return align_score
         
         def initialization(self):
@@ -194,6 +196,8 @@ class GlobalAttentionDecoder(nn.Module):
         h_0            (num of layers, N, H)
         c_0            (num of layers, N, H)
         """
+        encoder_outputs = encoder_outputs.masked_fill(encoder_outputs.mask_info.unsqueeze(2), -float('inf'))
+        
         decoder_input = target[:,0].unsqueeze(1) #N, L -> N, 1
         decoder_hidden = h_0
         decoder_cell = c_0
@@ -267,12 +271,13 @@ class LocalAttention(nn.Module):
         self.tanh = nn.Tanh()
         self.dev_pow = config.dev_pow
     
-    def forward(self, encoder_outputs, output, time_step):
+    def forward(self, encoder_outputs, output, time_step, src_len):
         align_score = self.align_layer(encoder_outputs, output) #N, 1, L
         N, _, L = encoder_outputs.shape
-        p_t = time_step
         if self.predictive: # eq 10
             p_t = self.position_layer(output, L)
+        else:
+            p_t = torch.max(src_len - time_step, torch.fill(torch.empty_like(src_len),-1))
         gaussian_distribution = self.gaussian(p_t, N, L) #eq 11 // N, 1, L
         align_score = torch.mul(align_score, gaussian_distribution)
         context_vector = torch.bmm(align_score, encoder_outputs)  #N, 1, L * N, L, H -> N, 1, H
@@ -280,7 +285,7 @@ class LocalAttention(nn.Module):
         return output
     
     def gaussian(self, time_step, N, L):
-        length_vec = torch.arange(0,L).repeat(N,1,1) # eq 11: s // N, 1, L
+        length_vec = torch.arange(0,L).repeat(N,1,1).to(config.device) # eq 11: s // N, 1, L
         pow_sub = torch.pow(torch.sub(length_vec, time_step), 2) #time_step: real number
         div = torch.mul(-1, torch.div(pow_sub, self.dev_pow))
         output = torch.exp(div)
@@ -307,7 +312,7 @@ class LocalAttentionDecoder(nn.Module):
         self.attention_layer = LocalAttention(hidden_size, align_type, predictive)
         self.output_layer = nn.Linear(hidden_size, vocab_size, bias=False)
         
-    def forward(self, encoder_outputs, h_0, c_0, target = None):
+    def forward(self, src_len, encoder_outputs, h_0, c_0, target = None):
         """
         h_0            (num of layers, N, H)
         c_0            (num of layers, N, H)
@@ -319,14 +324,14 @@ class LocalAttentionDecoder(nn.Module):
         attn_vec = torch.zeros_like(encoder_outputs[:,0,:]) #N, 1, H
         
         for time_step in range(1, config.MAX_LENGTH+2): #total processing time -> 51 // total tgt time step -> 52
-            attn_vec, decoder_output, decoder_hidden, decoder_cell = self.forward_step(time_step, attn_vec, encoder_outputs, decoder_input, decoder_hidden, decoder_cell)
+            attn_vec, decoder_output, decoder_hidden, decoder_cell = self.forward_step(src_len, time_step, attn_vec, encoder_outputs, decoder_input, decoder_hidden, decoder_cell)
             decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
             decoder_input = target[:,time_step].unsqueeze(1) #N, 1
         
         decoder_outputs = torch.cat(decoder_outputs, dim=1) #decoder_outputs -> (L, N, 1, V) => (N, L, V) L = 51
         return decoder_outputs, decoder_hidden, decoder_cell
     
-    def forward_step(self, time_step, attn_vec, encoder_outputs, input, hidden, cell):
+    def forward_step(self, src_len, time_step, attn_vec, encoder_outputs, input, hidden, cell):
         """
         encoder_outputs (N, L, H)
         input           (N, 1)
@@ -338,7 +343,7 @@ class LocalAttentionDecoder(nn.Module):
             emb = torch.cat((emb, attn_vec), dim=2) #N, 1, 2H
         emb = self.dropout(emb)
         output, (h, c) = self.lstm_layer(emb, (hidden, cell))
-        attn_vec = self.attention_layer(encoder_outputs, output, time_step)
+        attn_vec = self.attention_layer(encoder_outputs, output, time_step, src_len)
         output = self.output_layer(attn_vec) #N, 1, H -> N, 1, V
         return attn_vec, output, h, c
     

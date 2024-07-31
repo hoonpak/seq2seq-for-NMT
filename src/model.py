@@ -36,13 +36,23 @@ class Seq2Seq(nn.Module):
             self.decoder = layer.LocalAttentionDecoder(align, input_feeding, predictive, tgt_vocab_size, hidden_size, num_layers, dropout)
         else:
             self.decoder = layer.Decoder(tgt_vocab_size, hidden_size, num_layers, dropout)
+        self.attn = attn
         self.tgt_vocab_size = tgt_vocab_size
         
     def forward(self, src, src_len, tgt = None):
         encoder_output, decoder_h_0, decoder_c_0 = self.encoder(src, src_len)
-        decoder_output, _, _ = self.decoder(encoder_output, decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
-        decoder_output = decoder_output.permute(0,2,1) #decoder output = N, V, L
-        # decoder_output = decoder_output.reshape(-1, self.tgt_vocab_size) #decoder output = N*L, V
+        
+        if self.attn == 'global':
+            mask_info = (src == 0)
+            encoder_output.mask_info = mask_info
+        
+        if self.attn.startswith("local"):
+            decoder_output, _, _ = self.decoder(src_len, encoder_output, decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
+        else:
+            decoder_output, _, _ = self.decoder(encoder_output, decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
+        
+        # decoder_output = decoder_output.permute(0,2,1) #decoder output = N, V, L
+        decoder_output = decoder_output.reshape(-1, self.tgt_vocab_size) #decoder output = N*L, V
         return decoder_output
     
     def initialization(self):

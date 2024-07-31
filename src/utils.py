@@ -29,8 +29,10 @@ class PrepareData:
         if is_train:
             print("Load src dictionaries...")
             self.src_word2id, self.src_id2word = self.get_dictionary(self.filtered_src)
+            # self.src_word2id, self.src_id2word = self.get_dictionary(src_lines)
             print("Load tgt dictionaries...")
             self.tgt_word2id, self.tgt_id2word = self.get_dictionary(self.filtered_tgt)
+            # self.tgt_word2id, self.tgt_id2word = self.get_dictionary(tgt_lines)
         
     def get_filter_index(self, length_list, max_length):
         filter_index = []
@@ -50,6 +52,8 @@ class PrepareData:
                 token = token.lower() #
                 counter[token] += 1
 
+        print(counter.total())
+        
         id = 4
         for word, _ in counter.most_common(config.WORD_FREQUENCY):
             word2id[word] = id

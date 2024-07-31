@@ -19,4 +19,6 @@ normalized_gradient = 5
 dropout_rate = 0.2
 window_size = 10
 dev_pow = 50
+
+device = 'cpu'
 #1 epoch에 257984 iter

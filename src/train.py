@@ -20,32 +20,34 @@ parser.add_argument("--align", choices=['dot', 'general', 'concat', 'location', 
 parser.add_argument("--device")
 option = parser.parse_args()
 
+config.device = option.device
+
 name = "np_v2_base"
 
 if option.reverse:
-    name += "reverse"
+    name += "_reverse"
     print("Reverse ready")
 
 dropout = 0
 if option.dropout:
-    name += "dropout"
+    name += "_dropout"
     dropout = config.dropout_rate
     config.max_epoch = 12
     config.lr_update_point = 8
     print(f"{dropout} - Dropout ready")
 
 if option.input_feeding:
-    name += option.input_feeding
+    name += "_infeed"
     
 if option.attn == 'no':
     pass
 else:
-    name += option.attn
+    name += "_"+option.attn
     
 if option.align == 'no':
     pass
 else:
-    name += option.align
+    name += "_"+option.align
     
 print(f"System:{name} is ready!!")
 
@@ -104,8 +106,8 @@ for epoch in range(config.max_epoch):
         
         optimizer.zero_grad()
         predict = model.forward(src, src_len, tgt)
-        loss = loss_function(predict, tgt[:,1:])
-        # loss = loss_function(predict, tgt[:,1:].reshape(-1))
+        # loss = loss_function(predict, tgt[:,1:])
+        loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
         nn.utils.clip_grad_norm_(parameters, max_norm=config.normalized_gradient)
         optimizer.step()
@@ -133,8 +135,8 @@ for epoch in range(config.max_epoch):
                     src = src.to(device)
                     tgt = tgt.to(device)
                     predict = model.forward(src, src_len, tgt)
-                    loss = loss_function(predict, tgt[:,1:])
-                    # loss = loss_function(predict, tgt[:,1:].reshape(-1))
+                    # loss = loss_function(predict, tgt[:,1:])
+                    loss = loss_function(predict, tgt[:,1:].reshape(-1))
                     test_cost += loss.detach().cpu().item()
                     test_ppl += torch.exp(loss.detach()).cpu().item()
                     num += 1
@@ -169,6 +171,6 @@ for epoch in range(config.max_epoch):
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
     # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
-    test_ins.perplexity(model, device)
-    # test_ins.perplexity_(model, device)
+    # test_ins.perplexity(model, device)
+    test_ins.perplexity_(model, device)
     model.train()
