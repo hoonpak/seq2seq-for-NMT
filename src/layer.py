@@ -204,7 +204,7 @@ class GlobalAttentionDecoder(nn.Module):
         decoder_hidden = h_0
         decoder_cell = c_0
         decoder_outputs = []
-        attn_vec = torch.zeros(N, 1, H) #N, 1, H
+        attn_vec = torch.zeros(N, 1, H).to(config.device) #N, 1, H
         
         for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
             attn_vec, decoder_output, decoder_hidden, decoder_cell = self.forward_step(attn_vec, encoder_outputs, decoder_input, decoder_hidden, decoder_cell)
