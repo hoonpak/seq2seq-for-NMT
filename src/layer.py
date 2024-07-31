@@ -220,6 +220,7 @@ class GlobalAttentionDecoder(nn.Module):
         cell            (num of layers, H)
         """
         emb = self.embedding_layer(input) #N, 1, H
+        print(emb.shape, attn_vec.shape)
         if self.input_feeding:
             emb = torch.cat((emb, attn_vec), dim=2) #N, 1, 2H
         emb = self.dropout(emb)
