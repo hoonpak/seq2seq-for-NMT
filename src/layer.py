@@ -196,13 +196,15 @@ class GlobalAttentionDecoder(nn.Module):
         h_0            (num of layers, N, H)
         c_0            (num of layers, N, H)
         """
-        encoder_outputs = encoder_outputs.masked_fill(encoder_outputs.mask_info.unsqueeze(2), -float('inf'))
-        
+        # mask_info = encoder_outputs.mask_info
+        # encoder_outputs = encoder_outputs.masked_fill(encoder_outputs.mask_info.unsqueeze(2), -float('inf'))
+        # encoder_outputs.mask_info = mask_info
+        N, L, H = encoder_outputs.shape
         decoder_input = target[:,0].unsqueeze(1) #N, L -> N, 1
         decoder_hidden = h_0
         decoder_cell = c_0
         decoder_outputs = []
-        attn_vec = torch.zeros_like(encoder_outputs[:,0,:]) #N, 1, H
+        attn_vec = torch.zeros(N, 1, H) #N, 1, H
         
         for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
             attn_vec, decoder_output, decoder_hidden, decoder_cell = self.forward_step(attn_vec, encoder_outputs, decoder_input, decoder_hidden, decoder_cell)
@@ -220,7 +222,7 @@ class GlobalAttentionDecoder(nn.Module):
         cell            (num of layers, H)
         """
         emb = self.embedding_layer(input) #N, 1, H
-        print(emb.shape, attn_vec.shape)
+        # print(emb.shape, attn_vec.shape)
         if self.input_feeding:
             emb = torch.cat((emb, attn_vec), dim=2) #N, 1, 2H
         emb = self.dropout(emb)

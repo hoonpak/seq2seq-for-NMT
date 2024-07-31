@@ -103,7 +103,6 @@ for epoch in range(config.max_epoch):
     for src, src_len, tgt in train_dataloader:
         # breakpoint()
         src = src.to(device)
-        # src_len = src_len.to(device)
         tgt = tgt.to(device)
         
         optimizer.zero_grad()

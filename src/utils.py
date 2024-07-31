@@ -52,7 +52,7 @@ class PrepareData:
                 token = token.lower() #
                 counter[token] += 1
 
-        print(counter.total())
+        print("Train Data Size: ", (counter.total()//1000000), "M")
         
         id = 4
         for word, _ in counter.most_common(config.WORD_FREQUENCY):
