@@ -19,6 +19,7 @@ class Attention(nn.Module):
         
     def forward(self, encoder_outputs, decoder_h_t, src_len, p_t = None):
         # Masking process
+        N, L, H = encoder_outputs.shape
         src_start = 0
         src_end = src_len.to(config.device)
         if p_t != None: # local attention
@@ -33,7 +34,7 @@ class Attention(nn.Module):
                 attn_end[exc_end_index] = src_end[exc_end_index]
             src_start = attn_start
             src_end = attn_end
-        length_vec = self.index_matrix.repeat(config.batch_size,1) # N, L
+        length_vec = self.index_matrix.repeat(N,1) # N, L
         if self.attn_type.startswith("local"):
             mask_info_start = (length_vec < src_start.unsqueeze(-1))
         else:
@@ -45,15 +46,15 @@ class Attention(nn.Module):
         score4align = self.score_layer(decoder_h_t, encoder_outputs)
         align_score = score4align.masked_fill(mask_info.unsqueeze(1), -float('inf')).softmax(dim=2) #N, 1, L
         if self.attn_type.startswith("local"):
-            gaussian_distribution = self.gaussian(p_t) #eq 11 // N, L
+            gaussian_distribution = self.gaussian(p_t, N) #eq 11 // N, L
             align_score = torch.mul(align_score, gaussian_distribution.unsqueeze(1))
         context_vector = torch.bmm(align_score, encoder_outputs) # (N, 1, L)*(N, L, H) => N, 1, H
         attention_output = self.tanh(self.W_c(torch.cat((context_vector, decoder_h_t), dim=2)))
         
         return attention_output
         
-    def gaussian(self, time_steps):
-        length_vec = self.index_matrix.repeat(config.batch_size,1) # eq 11: s // N, L
+    def gaussian(self, time_steps, N):
+        length_vec = self.index_matrix.repeat(N, 1) # eq 11: s // N, L
         pow_sub = torch.pow(torch.sub(length_vec, time_steps.unsqueeze(-1)), 2) #time_step: real number
         div = torch.mul(-1, torch.div(pow_sub, self.dev_pow))
         output = torch.exp(div)

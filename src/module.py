@@ -88,7 +88,8 @@ class Decoder(nn.Module):
         decoder_hidden = h_0
         decoder_cell = c_0
         decoder_outputs = []
-        attn_vec = torch.zeros(config.batch_size, 1, config.dimension).to(config.device) #N, 1, H
+        N, L, H = encoder_outputs.shape
+        attn_vec = torch.zeros(N, 1, H).to(config.device) #N, 1, H
         for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
             if self.attn_type != 'no':
                 decoder_output, attn_vec, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec, time_step=time_step,
@@ -108,10 +109,10 @@ class Decoder(nn.Module):
         hidden (num of layers, H)
         cell   (num of layers, H)
         """
+        N, L, H = encoder_outputs.shape
         emb = self.embedding_layer(input) #N, 1, H
         emb = self.dropout(emb)
         if self.input_feeding:
-            print(emb.shape, attn_vec.shape)
             emb = torch.cat((emb, attn_vec), dim=2)
         output_t, (h_t, c_t) = self.lstm_layer(emb, (hidden, cell))
         h_t = torch.clamp(h_t, min=-config.clipForward, max=config.clipForward)
@@ -124,7 +125,7 @@ class Decoder(nn.Module):
                     if self.reverse:
                         p_t = torch.max(src_len - time_step, torch.fill(torch.empty_like(src_len),-1))
                     else:
-                        p_t = time_step.repeat(config.batch_size)
+                        p_t = time_step.repeat(N)
                 else:
                     p_t = self.position_layer(output_t).squeeze()
                 attn_vec = self.attn_layer(encoder_outputs, output_t, src_len, p_t) #p_t (N,)
