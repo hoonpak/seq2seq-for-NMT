@@ -89,18 +89,15 @@ class Decoder(nn.Module):
         decoder_cell = c_0
         decoder_outputs = []
         attn_vec = torch.zeros(config.batch_size, 1, config.dimension).to(config.device) #N, 1, H
-        if self.attn_type != 'no':
-            for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
+        for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
+            if self.attn_type != 'no':
                 decoder_output, attn_vec, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec, time_step=time_step,
                                                                                         input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
-                decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
-                decoder_input = target[:,time_step].unsqueeze(1) #N, 1
-        else:
-            for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
-                decoder_output, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, time_step=time_step,
-                                                                                        input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
-                decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
-                decoder_input = target[:,time_step].unsqueeze(1) #N, 1
+            else:
+                decoder_output, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec, time_step=time_step,
+                                                                                input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
+            decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
+            decoder_input = target[:,time_step].unsqueeze(1) #N, 1
                 
         decoder_outputs = torch.cat(decoder_outputs, dim=1) #decoder_outputs -> (L, N, 1, V) => (N, L, V) L = 51
         return decoder_outputs, decoder_hidden, decoder_cell
@@ -114,6 +111,7 @@ class Decoder(nn.Module):
         emb = self.embedding_layer(input) #N, 1, H
         emb = self.dropout(emb)
         if self.input_feeding:
+            print(emb.shape, attn_vec.shape)
             emb = torch.cat((emb, attn_vec), dim=2)
         output_t, (h_t, c_t) = self.lstm_layer(emb, (hidden, cell))
         h_t = torch.clamp(h_t, min=-config.clipForward, max=config.clipForward)
