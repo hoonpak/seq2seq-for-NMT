@@ -20,7 +20,7 @@ class Attention(nn.Module):
     def forward(self, encoder_outputs, decoder_h_t, src_len, p_t = None):
         # Masking process
         src_start = 0
-        src_end = src_len
+        src_end = src_len.to(config.device)
         if p_t != None: # local attention
             attn_start = p_t - config.window_size
             attn_end = p_t + config.window_size
