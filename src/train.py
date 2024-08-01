@@ -57,15 +57,14 @@ device = option.device
 
 training_src_path = "../dataset/training/np_training_en.txt"
 training_tgt_path = "../dataset/training/np_training_de.txt"
-# test_src_path = "../dataset/test/test_en_2014.txt"
-# test_tgt_path = "../dataset/test/test_de_2014.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
 train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
 test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
 
-test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
+test_ins= TestRNN(filtered_test_src=test_data.filtered_src, filtered_test_tgt=test_data.filtered_tgt,
+                  train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id, is_reverse=option.reverse)
 
 train_dataset = CustomDataset(src = train_data.filtered_src, tgt = train_data.filtered_tgt, 
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
@@ -74,26 +73,24 @@ test_dataset = CustomDataset(src = test_data.filtered_src, tgt = test_data.filte
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
                             is_reverse = option.reverse)
 
-train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=True)
+test_dataloader = DataLoader(dataset=test_dataset, batch_size=config.batch_size, shuffle=False)
 
 src_vocab_size = len(train_data.src_word2id)
 tgt_vocab_size = len(train_data.tgt_word2id)
 
-model = Seq2Seq(attn = option.attn, align = option.align, input_feeding = option.input_feeding, 
+model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
                 src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
-                num_layers = config.num_layers, dropout = dropout).to(device)
+                num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
 
-model.initialization()
 with torch.no_grad():
     model.encoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
     model.decoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
 
 loss_function = nn.CrossEntropyLoss(ignore_index = config.PAD).to(device)
-parameters = filter(lambda p: p.requires_grad, model.parameters())
-optimizer = torch.optim.SGD(parameters, lr=config.start_lr)
+optimizer = torch.optim.SGD(params = model.parameters(), lr = config.start_lr)
 
-writer = SummaryWriter(log_dir=f"./runs/{name}")
+writer = SummaryWriter(log_dir = f"./runs/{name}")
 st = time.time()
 train_loss = 0
 train_ppl = 0
@@ -101,16 +98,18 @@ print("Start training!!")
 iter = 0
 for epoch in range(config.max_epoch):
     for src, src_len, tgt in train_dataloader:
-        # breakpoint()
+        # shape:
+        # src     : (N, L)
+        # src_len : (N,)
+        # tgt     : (N, L)
         src = src.to(device)
         tgt = tgt.to(device)
         
         optimizer.zero_grad()
-        predict = model.forward(src, src_len, tgt)
-        # loss = loss_function(predict, tgt[:,1:])
+        predict = model.forward(src=src, src_len=src_len, tgt=tgt)
         loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
-        nn.utils.clip_grad_norm_(parameters, max_norm=config.normalized_gradient)
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.normalized_gradient)
         optimizer.step()
         
         train_loss += loss.detach().cpu().item()
@@ -135,7 +134,7 @@ for epoch in range(config.max_epoch):
                 for src, src_len, tgt in test_dataloader:
                     src = src.to(device)
                     tgt = tgt.to(device)
-                    predict = model.forward(src, src_len, tgt)
+                    predict = model.forward(src=src, src_len=src_len, tgt=tgt)
                     # loss = loss_function(predict, tgt[:,1:])
                     loss = loss_function(predict, tgt[:,1:].reshape(-1))
                     test_cost += loss.detach().cpu().item()
