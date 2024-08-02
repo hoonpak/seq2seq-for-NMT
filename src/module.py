@@ -33,13 +33,13 @@ class Encoder(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
         self.lstm_layer = nn.LSTM(input_size=hidden_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout, batch_first=True)
         
-    def forward(self, input, lengths):
+    def forward(self, encoder_input, lengths):
         """
         input (N, L)
         h_0   (num of layers, N, H)
         c_0   (num of layers, N, H)
         """
-        emb = self.embedding_layer(input) #batch size, max lenth, dimension
+        emb = self.embedding_layer(encoder_input) #batch size, max lenth, dimension
         emb = self.dropout(emb)
         packed_emb = pack_padded_sequence(input=emb, lengths=lengths, batch_first=True, enforce_sorted=False)
         packed_output, (h_n, c_n) = self.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
@@ -100,14 +100,14 @@ class Decoder(nn.Module):
         decoder_outputs = torch.cat(decoder_outputs, dim=1) #decoder_outputs -> (L, N, 1, V) => (N, L, V) L = 51
         return decoder_outputs, decoder_hidden, decoder_cell
     
-    def forward_step(self, src_len, encoder_outputs, attn_vec, time_step, input, hidden, cell):
+    def forward_step(self, src_len, encoder_outputs, attn_vec, time_step, decoder_input, hidden, cell):
         """
-        input  (N, 1)
-        hidden (num of layers, H)
-        cell   (num of layers, H)
+        decoder_input  (N, 1)
+        hidden         (num of layers, H)
+        cell           (num of layers, H)
         """
         N, L, H = encoder_outputs.shape
-        emb = self.embedding_layer(input) #N, 1, H
+        emb = self.embedding_layer(decoder_input) #N, 1, H
         emb = self.dropout(emb)
         if self.input_feeding:
             emb = torch.cat((emb, attn_vec), dim=2)
