@@ -35,7 +35,7 @@ class Seq2Seq(nn.Module):
         Returns:
             _type_: _description_
         """
-        encoder_outputs, decoder_h_0, decoder_c_0 = self.encoder(input=src, lengths=src_len)
+        encoder_outputs, decoder_h_0, decoder_c_0 = self.encoder(src, src_len)
         decoder_output, _, _ = self.decoder(src_len, encoder_outputs, decoder_h_0, decoder_c_0, tgt) #decoder_output = N, L, V // L = 51
         # decoder_output = decoder_output.permute(0,2,1) #decoder output = N, V, L
         decoder_output = decoder_output.reshape(-1, self.tgt_vocab_size) #decoder output = N*L, V
