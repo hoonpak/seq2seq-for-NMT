@@ -93,7 +93,7 @@ class Decoder(nn.Module):
         
         for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
             decoder_output, attn_vec, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
-                                                                                       time_step=time_step, input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
+                                                                                       time_step=time_step, decoder_input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
             decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
             decoder_input = target[:,time_step].unsqueeze(1) #N, 1
                 
