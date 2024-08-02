@@ -27,29 +27,29 @@ config.device = option.device
 name = option.name
 
 if option.reverse:
-    name += "reverse"
+    name += "_reverse"
     print("Reverse ready")
 
 dropout = 0
 if option.dropout:
-    name += "dropout"
+    name += "_dropout"
     dropout = config.dropout_rate
     config.max_epoch = 12
     config.lr_update_point = 8
     print(f"{dropout} - Dropout ready")
 
 if option.input_feeding:
-    name += option.input_feeding
+    name += "_infeed"
     
 if option.attn == 'no':
     pass
 else:
-    name += option.attn
+    name += "_"+option.attn
     
 if option.align == 'no':
     pass
 else:
-    name += option.align
+    name += "_"+option.align
     
 print(f"System:{name} is ready!!")
 
