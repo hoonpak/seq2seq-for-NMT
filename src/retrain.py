@@ -134,10 +134,10 @@ for epoch in range(model_info['epoch']+1, config.max_epoch):
             num = 0
             model.eval()
             with torch.no_grad():
-                for src, tgt in test_dataloader:
+                for src, src_len, tgt in test_dataloader:
                     src = src.to(device)
                     tgt = tgt.to(device)
-                    predict = model.forward(src, tgt)
+                    predict = model.forward(src, src_len, tgt)
                     loss = loss_function(predict, tgt[:,1:].reshape(-1))
                     test_cost += loss.detach().cpu().item()
                     test_ppl += torch.exp(loss.detach()).cpu().item()
