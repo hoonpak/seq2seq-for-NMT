@@ -83,11 +83,10 @@ class TestRNN:
                         decoder_output, attn_vec, decoder_h, decoder_c = model.decoder.forward_step(src_len=encoder_input_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
                                                                                                     time_step=time_step, decoder_input=decoder_input, hidden=decoder_h, cell=decoder_c)
                         probabilities, candidates = decoder_output.softmax(dim=-1).topk(beam_size)
-                        
+
                         for i in range(beam_size):
-                            candidate = candidates[0, i].unsqueeze(0) #
-                            prob = probabilities[0, i]
-                            
+                            candidate = candidates.squeeze()[i].unsqueeze(0).unsqueeze(0) #
+                            prob = probabilities.squeeze()[i]
                             new_sequence = sequence + [candidate]
                             new_score = (score - torch.log(prob + 1e-7)).item()
                             
@@ -109,7 +108,7 @@ class TestRNN:
                     
                 completed_sequences.extend(beam)
                 completed_sequences = sorted(completed_sequences, key=lambda x:x[0])[0]
-                best_score, best_sequence, _, _ = completed_sequences
+                best_score, best_sequence, _, _, _ = completed_sequences
                 best_sequence = [step.item() for step in best_sequence[1:]]
                 predict.append(best_sequence)
                 
