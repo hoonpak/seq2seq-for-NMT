@@ -79,7 +79,7 @@ class TestRNN:
                     new_beam = []
                     for score, sequence, decoder_h, decoder_c, attn_vec in beam:
                         decoder_input = sequence[-1]
-                        encoder_input_len = encoder_input_len.to(device)
+                        encoder_input_len = torch.LongTensor(encoder_input_len).to(device)
                         decoder_output, attn_vec, decoder_h, decoder_c = model.decoder.forward_step(src_len=encoder_input_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
                                                                                                     time_step=time_step, decoder_input=decoder_input, hidden=decoder_h, cell=decoder_c)
                         probabilities, candidates = decoder_output.softmax(dim=-1).topk(beam_size)
