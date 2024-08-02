@@ -102,6 +102,9 @@ for epoch in range(config.max_epoch):
         # src     : (N, L)
         # src_len : (N,)
         # tgt     : (N, L)
+        
+        torch.cuda.empty_cache()
+        
         src = src.to(device)
         tgt = tgt.to(device)
         
@@ -147,9 +150,8 @@ for epoch in range(config.max_epoch):
             writer.add_scalars('ppl', {'test_ppl':test_ppl}, iter)
             writer.flush()
             model.train()
-            
-            
         iter += 1
+        
     if (epoch+1) >= config.lr_update_point:
         optimizer.param_groups[0]['lr'] *= 0.5
     

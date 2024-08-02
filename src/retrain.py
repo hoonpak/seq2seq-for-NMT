@@ -21,6 +21,8 @@ parser.add_argument("--name")
 parser.add_argument("--device")
 option = parser.parse_args()
 
+config.device = option.device
+
 # name = "np_v2_base"
 name = option.name
 
@@ -55,8 +57,6 @@ device = option.device
 
 training_src_path = "../dataset/training/np_training_en.txt"
 training_tgt_path = "../dataset/training/np_training_de.txt"
-# test_src_path = "../dataset/test/test_en_2014.txt"
-# test_tgt_path = "../dataset/test/test_de_2014.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
@@ -79,15 +79,18 @@ src_vocab_size = len(train_data.src_word2id)
 tgt_vocab_size = len(train_data.tgt_word2id)
 
 model_info = torch.load(f"./save_model/{name}_CheckPoint.pth", map_location=device)
-model = model_info['model']
+# model = model_info['model']
+model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
+                src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
+                num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
+
 with torch.no_grad():
     model.encoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
     model.decoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
 model.load_state_dict(model_info['model_state_dict'])
 
 loss_function = nn.CrossEntropyLoss(ignore_index = config.PAD).to(device)
-parameters = filter(lambda p: p.requires_grad, model.parameters())
-optimizer = torch.optim.SGD(parameters, lr=config.start_lr)
+optimizer = torch.optim.SGD(params = model.parameters(), lr = config.start_lr)
 optimizer.load_state_dict(model_info['optimizer_state_dict'])
 
 writer = SummaryWriter(log_dir=f"./runs/{name}")
@@ -99,6 +102,8 @@ iter = 32248*(model_info['epoch']+1)
 for epoch in range(model_info['epoch']+1, config.max_epoch):
     for src, src_len, tgt in train_dataloader:
         # breakpoint()
+        torch.cuda.empty_cache()
+
         src = src.to(device)
         tgt = tgt.to(device)
         
@@ -106,7 +111,7 @@ for epoch in range(model_info['epoch']+1, config.max_epoch):
         predict = model.forward(src, src_len, tgt)
         loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
-        nn.utils.clip_grad_norm_(parameters, max_norm=config.normalized_gradient)
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.normalized_gradient)
         optimizer.step()
         
         train_loss += loss.detach().cpu().item()
