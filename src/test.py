@@ -56,20 +56,21 @@ class TestRNN:
             for src_sen in tqdm(self.src[:boundary]):
                 stop_flag = False
                 encoder_input = torch.LongTensor(src_sen).to(device) # L,
-                encoder_emb = model.encoder.embedding_layer(encoder_input)
-                encoder_output, (decoder_h, decoder_c)  = model.encoder.lstm_layer(encoder_emb) # L, H / num of layers, H
+                encoder_input_len = len(encoder_input)
+                encoder_outputs, decoder_h_0, decoder_c_0 = self.encoder(input=encoder_input, lengths=encoder_input_len)
                 # breakpoint()
                 decoder_input = torch.LongTensor([2]).to(device) # SOS Token -> 1
+                attn_vec = torch.zeros(config.dimension).to(device)
                 
-                beam = [(0.0, [decoder_input], decoder_h, decoder_c)]
-                
+                beam = [(0.0, [decoder_input], decoder_h_0, decoder_c_0, attn_vec)]
                 completed_sequences = []
                 
-                for _ in range(config.MAX_LENGTH):
+                for time_step in range(config.MAX_LENGTH+1):
                     new_beam = []
-                    for score, sequence, decoder_h, decoder_c in beam:
+                    for score, sequence, decoder_h, decoder_c, attn_vec in beam:
                         decoder_input = sequence[-1]
-                        decoder_output, decoder_h, decoder_c = model.decoder.forward_step(decoder_input, decoder_h, decoder_c)
+                        decoder_output, attn_vec, decoder_h, decoder_c = model.decoder.forward_step(src_len=encoder_input_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
+                                                                                                    time_step=time_step, input=decoder_input, hidden=decoder_h, cell=decoder_c)
                         probabilities, candidates = decoder_output.softmax(dim=1).topk(beam_size)
                         
                         for i in range(beam_size):
@@ -80,12 +81,12 @@ class TestRNN:
                             new_score = (score - torch.log(prob + 1e-7)).item()
                             
                             if candidate.item() == 3: #when search the eos token
-                                completed_sequences.append((score, sequence, decoder_h, decoder_c))
+                                completed_sequences.append((score, sequence, decoder_h, decoder_c, attn_vec))
                                 if len(completed_sequences) >= beam_size:
                                     stop_flag = True
                                     break
                             else:
-                                new_beam.append((new_score, new_sequence, decoder_h, decoder_c))
+                                new_beam.append((new_score, new_sequence, decoder_h, decoder_c, attn_vec))
                             
                         if stop_flag:
                             break

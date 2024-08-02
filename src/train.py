@@ -147,6 +147,11 @@ for epoch in range(config.max_epoch):
             writer.add_scalars('ppl', {'test_ppl':test_ppl}, iter)
             writer.flush()
             model.train()
+            
+            print("Start beam search!!")#
+            beam_predict = test_ins.beam_search(model, device, beam_size=3)#
+            beam_bleu_score = test_ins.bleu_score(beam_predict)#
+            
         iter += 1
     if (epoch+1) >= config.lr_update_point:
         optimizer.param_groups[0]['lr'] *= 0.5

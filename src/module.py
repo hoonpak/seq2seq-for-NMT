@@ -90,13 +90,10 @@ class Decoder(nn.Module):
         decoder_outputs = []
         N, L, H = encoder_outputs.shape
         attn_vec = torch.zeros(N, 1, H).to(config.device) #N, 1, H
+        
         for time_step in range(1, config.MAX_LENGTH+2): # total processing time -> 51 // total tgt time step -> 52
-            if self.attn_type != 'no':
-                decoder_output, attn_vec, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec, time_step=time_step,
-                                                                                        input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
-            else:
-                decoder_output, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec, time_step=time_step,
-                                                                                input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
+            decoder_output, attn_vec, decoder_hidden, decoder_cell = self.forward_step(src_len=src_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
+                                                                                       time_step=time_step, input=decoder_input, hidden=decoder_hidden, cell=decoder_cell)
             decoder_outputs.append(decoder_output) #decoder_output -> (N, 1, V)
             decoder_input = target[:,time_step].unsqueeze(1) #N, 1
                 
@@ -130,10 +127,9 @@ class Decoder(nn.Module):
                     p_t = self.position_layer(output_t).squeeze()
                 attn_vec = self.attn_layer(encoder_outputs, output_t, src_len, p_t) #p_t (N,)
             output = self.output_layer(attn_vec) #N, 1, V
-            return output, attn_vec, h_t, c_t
         else:
             output = self.output_layer(output_t) #N, 1, V
-            return output, h_t, c_t
+        return output, attn_vec, h_t, c_t
     
     def initialization(self):
         nn.init.uniform_(self.embedding_layer.weight, a=-config.uniform_init_range, b=config.uniform_init_range)
