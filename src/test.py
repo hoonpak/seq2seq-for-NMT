@@ -56,7 +56,7 @@ class TestRNN:
             for src_sen in tqdm(self.src[:boundary]):
                 stop_flag = False
                 encoder_input = torch.LongTensor(src_sen).to(device) # L,
-                encoder_input_len = len(src_sen)
+                encoder_input_len = [len(src_sen)]
                 encoder_outputs, decoder_h_0, decoder_c_0 = model.encoder(input=encoder_input, lengths=encoder_input_len)
                 # breakpoint()
                 decoder_input = torch.LongTensor([2]).to(device) # SOS Token -> 1
@@ -69,6 +69,7 @@ class TestRNN:
                     new_beam = []
                     for score, sequence, decoder_h, decoder_c, attn_vec in beam:
                         decoder_input = sequence[-1]
+                        encoder_input_len = encoder_input_len.to(device)
                         decoder_output, attn_vec, decoder_h, decoder_c = model.decoder.forward_step(src_len=encoder_input_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
                                                                                                     time_step=time_step, input=decoder_input, hidden=decoder_h, cell=decoder_c)
                         probabilities, candidates = decoder_output.softmax(dim=1).topk(beam_size)
