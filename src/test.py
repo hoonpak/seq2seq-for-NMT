@@ -56,7 +56,7 @@ class TestRNN:
             for src_sen in tqdm(self.src[:boundary]):
                 stop_flag = False
                 encoder_input = torch.LongTensor(src_sen).to(device) # L,
-                encoder_input_len = len(encoder_input)
+                encoder_input_len = len(src_sen)
                 encoder_outputs, decoder_h_0, decoder_c_0 = model.encoder(input=encoder_input, lengths=encoder_input_len)
                 # breakpoint()
                 decoder_input = torch.LongTensor([2]).to(device) # SOS Token -> 1
