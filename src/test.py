@@ -70,7 +70,7 @@ class TestRNN:
                 decoder_c_0 = torch.clamp(c_n, min=-config.clipForward, max=config.clipForward)
                 
                 decoder_input = torch.LongTensor([2]).reshape(1,-1).to(device) # SOS Token -> 1
-                attn_vec = torch.zeros(config.dimension).to(device)
+                attn_vec = torch.zeros(1,1,config.dimension).to(device)
                 
                 beam = [(0.0, [decoder_input], decoder_h_0, decoder_c_0, attn_vec)]
                 completed_sequences = []
