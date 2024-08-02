@@ -98,7 +98,8 @@ st = time.time()
 train_loss = 0
 train_ppl = 0
 print("Start training!!")
-iter = 32248*(model_info['epoch']+1)
+# iter = 32248*(model_info['epoch']+1)
+iter = 32413*(model_info['epoch']+1)
 for epoch in range(model_info['epoch']+1, config.max_epoch):
     for src, src_len, tgt in train_dataloader:
         # breakpoint()
