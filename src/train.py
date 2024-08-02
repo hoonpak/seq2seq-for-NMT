@@ -154,6 +154,7 @@ for epoch in range(config.max_epoch):
         optimizer.param_groups[0]['lr'] *= 0.5
     
     torch.save({'epoch': epoch,
+                'model':model,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'iter': iter,
