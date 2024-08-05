@@ -25,6 +25,7 @@ config.device = option.device
 
 # name = "np_v2_base"
 name = option.name
+device = option.device
 
 if option.reverse:
     name += "_reverse"
@@ -52,8 +53,6 @@ else:
     name += "_"+option.align
     
 print(f"System:{name} is ready!!")
-
-device = option.device
 
 training_src_path = "../dataset/training/np_training_en.txt"
 training_tgt_path = "../dataset/training/np_training_de.txt"
@@ -172,6 +171,5 @@ for epoch in range(model_info['epoch']+1, config.max_epoch):
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
     # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
-    # test_ins.perplexity(model, device)
-    test_ins.perplexity_(model, device)
+    test_ins.perplexity(model, device)
     model.train()

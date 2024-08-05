@@ -51,6 +51,9 @@ class TestRNN:
                 
         return predict
     
+    def length_penalty(self, sentence, alpha = 1.2):
+        return ((5+len(sentence))**alpha)/((5+1)**alpha)
+    
     def beam_search(self, model, device, beam_size, boundary = None):
         predict = []
         model.eval()
@@ -90,6 +93,7 @@ class TestRNN:
                             prob = probabilities.squeeze()[i]
                             new_sequence = sequence + [candidate]
                             new_score = (score - torch.log(prob + 1e-7)).item()
+                            new_score /= self.length_penalty(new_sequence)
                             
                             if candidate.item() == 3: #when search the eos token
                                 completed_sequences.append((score, sequence, decoder_h, decoder_c, attn_vec))
@@ -164,26 +168,6 @@ class TestRNN:
                 src = src.to(device)
                 tgt = tgt.to(device)
                 predict = model.forward(src, src_len, tgt)
-                loss = loss_function(predict, tgt[:,1:])
-                test_cost += loss.detach().cpu().item()
-                test_ppl += torch.exp(loss.detach()).cpu().item()
-                num += 1
-        test_cost /= num
-        test_ppl /= num
-        print('='*10, f"Test Loss: {test_cost:<10.4f} Test PPL: {test_ppl:<10.2f}", '='*10)
-
-    def perplexity_(self, model, device):
-        test_cost = 0
-        test_ppl = 0
-        num = 0
-        model.eval()
-        test_dataloader = DataLoader(self.test_dataset, config.batch_size, shuffle=False)
-        loss_function = torch.nn.CrossEntropyLoss(ignore_index = config.PAD).to(device)
-        with torch.no_grad():
-            for src, src_len, tgt in tqdm(test_dataloader):
-                src = src.to(device)
-                tgt = tgt.to(device)
-                predict = model.forward(src, src_len, tgt)
                 loss = loss_function(predict, tgt[:,1:].reshape(-1))
                 test_cost += loss.detach().cpu().item()
                 test_ppl += torch.exp(loss.detach()).cpu().item()
@@ -247,5 +231,4 @@ if __name__ == "__main__":
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
     print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
-    # test_ins.perplexity(model, option.device)
-    test_ins.perplexity_(model, option.device)
+    test_ins.perplexity(model, option.device)
