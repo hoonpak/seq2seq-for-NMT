@@ -1,5 +1,6 @@
 import argparse
 import time
+import os
 
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
@@ -305,6 +306,8 @@ if __name__ == "__main__":
         ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target))).encode('utf-8'))
         ftarget.write("\n".encode('utf-8'))
     ftarget.close()
+    
+    os.system("./multi-bleu.perl -lc target < beam_predict")
     
     # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
     test_ins.perplexity(model, option.device)
