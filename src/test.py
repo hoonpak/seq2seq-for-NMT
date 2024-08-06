@@ -287,20 +287,20 @@ if __name__ == "__main__":
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
 
-    # print("write ref/hyp file ... ")
-    # hyp_file_name = "./beam_predict"
-    # fhyp = open(hyp_file_name, "wb")
-    # for hyp in beam_predict:
-    #     fhyp.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], hyp))).encode('utf-8'))
-    #     fhyp.write("\n".encode('utf-8'))
-    # fhyp.close()
+    print("write ref/hyp file ... ")
+    hyp_file_name = "./beam_predict"
+    fhyp = open(hyp_file_name, "wb")
+    for hyp in beam_predict:
+        fhyp.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], hyp))).encode('utf-8'))
+        fhyp.write("\n".encode('utf-8'))
+    fhyp.close()
 
-    # target_file_name = "./target"
-    # ftarget = open(target_file_name, "wb")
-    # for target in test_ins.tgt:
-    #     ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target))).encode('utf-8'))
-    #     ftarget.write("\n".encode('utf-8'))
-    # ftarget.close()
+    target_file_name = "./target"
+    ftarget = open(target_file_name, "wb")
+    for target in test_ins.tgt:
+        ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target))).encode('utf-8'))
+        ftarget.write("\n".encode('utf-8'))
+    ftarget.close()
     
     # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
     test_ins.perplexity(model, option.device)
