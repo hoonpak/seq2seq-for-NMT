@@ -253,10 +253,14 @@ if __name__ == "__main__":
     print(f"System:{name} is ready!!")
 
 
-    training_src_path = "../dataset/training/new_training_en.txt"
-    training_tgt_path = "../dataset/training/new_training_de.txt"
-    test_src_path = "../dataset/test/new_test_cost_en.txt"
-    test_tgt_path = "../dataset/test/new_test_cost_de.txt"
+    # training_src_path = "../dataset/training/new_training_en.txt"
+    # training_tgt_path = "../dataset/training/new_training_de.txt"
+    # test_src_path = "../dataset/test/new_test_cost_en.txt"
+    # test_tgt_path = "../dataset/test/new_test_cost_de.txt"
+    training_src_path = "../dataset/training/np_training_en.txt"
+    training_tgt_path = "../dataset/training/np_training_de.txt"
+    test_src_path = "../dataset/test/test_cost_en.txt"
+    test_tgt_path = "../dataset/test/test_cost_de.txt"
 
     train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
     test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
