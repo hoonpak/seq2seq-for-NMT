@@ -23,6 +23,7 @@ class Attention(nn.Module):
         src_start = 0
         src_end = src_len.to(config.device)
         if p_t != None: # local attention
+            p_t = p_t.to(config.device)
             attn_start = p_t - config.window_size
             attn_end = p_t + config.window_size
             exc_start_index = (attn_start < src_start)

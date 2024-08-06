@@ -14,12 +14,13 @@ class PositionRegression(nn.Module):
         self.v_p = nn.Linear(hidden_size, 1, bias=False)
         self.sigmoid = nn.Sigmoid()
         
-    def forward(self, output):
+    def forward(self, output, src_len):
+        src_len = src_len.to(config.device)
         w_p_out = self.W_p(output)
         tanh_out = self.tanh(w_p_out)
         v_p_out = self.v_p(tanh_out)
-        sig_out = self.sigmoid(v_p_out)
-        position = torch.mul(config.MAX_LENGTH+2, sig_out)
+        sig_out = self.sigmoid(v_p_out).squeeze()
+        position = torch.mul(src_len, sig_out)
         return position
     
     def initialization(self):
@@ -123,8 +124,9 @@ class Decoder(nn.Module):
                         p_t = torch.max(src_len - time_step, torch.fill(torch.empty_like(src_len),-1))
                     else:
                         p_t = time_step.repeat(N)
-                else:
-                    p_t = self.position_layer(output_t).squeeze()
+                else: #local_p
+                    # p_t = self.position_layer(output_t).squeeze()
+                    p_t = self.position_layer(output_t, src_len)
                 attn_vec = self.attn_layer(encoder_outputs, output_t, src_len, p_t) #p_t (N,)
             output = self.output_layer(attn_vec) #N, 1, V
         else:
