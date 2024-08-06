@@ -9,6 +9,7 @@ WORD_FREQUENCY = 50000
 # device = "cuda:0"
 
 clipForward = 50
+clipBackward = 1000
 num_layers = 4
 batch_size = 128
 uniform_init_range = 0.1

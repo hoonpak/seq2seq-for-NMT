@@ -33,13 +33,27 @@ class TestRNN:
         with torch.no_grad():
             for src_sen in tqdm(self.src[:boundary]):
                 outputs = []
-                encoder_input = torch.LongTensor(src_sen).to(device) # L,
-                encoder_emb = model.encoder.embedding_layer(encoder_input)
-                encoder_output, (decoder_h, decoder_c)  = model.encoder.lstm_layer(encoder_emb) # L, H / num of layers, H
-                decoder_input = torch.LongTensor([2]).to(device) # SOS Token -> 1,1
                 
-                for time_step in range(1, config.MAX_LENGTH+2):
-                    decoder_output, decoder_h, decoder_c = model.decoder.forward_step(decoder_input, decoder_h, decoder_c) 
+                encoder_input = torch.LongTensor(src_sen).reshape(1,-1).to(device) # L,
+                encoder_input_len = [len(src_sen)]
+                
+                emb = model.encoder.embedding_layer(encoder_input) #batch size, max lenth, dimension
+                emb = model.encoder.dropout(emb)
+                packed_emb = pack_padded_sequence(input=emb, lengths=encoder_input_len, batch_first=True, enforce_sorted=False)
+                # model.encoder.lstm_layer.flatten_parameters()
+                packed_output, (h_n, c_n) = model.encoder.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
+                encoder_outputs, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=config.MAX_LENGTH+2)
+                decoder_h_0 = torch.clamp(h_n, min=-config.clipForward, max=config.clipForward)
+                decoder_c_0 = torch.clamp(c_n, min=-config.clipForward, max=config.clipForward)
+                
+                decoder_input = torch.LongTensor([2]).reshape(1,-1).to(device) # SOS Token -> 1
+                attn_vec = torch.zeros(1,1,config.dimension).to(device)
+                
+                for time_step in range(config.MAX_LENGTH+1):
+                    encoder_input_len = torch.Tensor(encoder_input_len)
+                    
+                    decoder_output, attn_vec, decoder_h, decoder_c = model.decoder.forward_step(src_len=encoder_input_len, encoder_outputs=encoder_outputs, attn_vec=attn_vec,
+                                                                                                time_step=time_step, decoder_input=decoder_input, hidden=decoder_h, cell=decoder_c)
                     decoder_input = decoder_output.topk(1)[1].squeeze(-1).detach()
                     
                     hypo = decoder_input.item()
@@ -53,6 +67,21 @@ class TestRNN:
     
     def length_penalty(self, sentence, alpha = 1.2):
         return ((5+len(sentence))**alpha)/((5+1)**alpha)
+    
+    def limit_length_repeat_penalty(self, src_length, score, predict_sen):
+        min_length = 0.5*src_length
+        max_length = 1.5*src_length
+        if len(predict_sen) < min_length:
+            return 100000
+        if len(predict_sen) > max_length:
+            return 100000
+        if len(predict_sen) >= 5:
+            predict_sen = [str(step.item()) for step in predict_sen]
+            predict_ngram = Counter(self.get_ngram(4, predict_sen))
+            for k, v in predict_ngram.items():
+                if v >= 2:
+                    return 100000
+        return score
     
     def beam_search(self, model, device, beam_size, boundary = None):
         predict = []
@@ -93,7 +122,7 @@ class TestRNN:
                             prob = probabilities.squeeze()[i]
                             new_sequence = sequence + [candidate]
                             new_score = (score - torch.log(prob + 1e-7)).item()
-                            new_score /= self.length_penalty(new_sequence)
+                            # new_score /= self.length_penalty(new_sequence)
                             
                             if candidate.item() == 3: #when search the eos token
                                 completed_sequences.append((score, sequence, decoder_h, decoder_c, attn_vec))
@@ -112,13 +141,16 @@ class TestRNN:
                     beam = sorted(new_beam, key=lambda x:x[0])[:beam_size-len(completed_sequences)]
                     
                 completed_sequences.extend(beam)
-                completed_sequences = sorted(completed_sequences, key=lambda x:x[0])[0]
+                completed_sequences = list(map(list, completed_sequences))
+                for ind in range(len(completed_sequences)):
+                    completed_sequences[ind][0] = self.limit_length_repeat_penalty(len(src_sen), completed_sequences[ind][0], completed_sequences[ind][1])                    
+                completed_sequences = sorted(completed_sequences, key=lambda x: x[0]/(self.length_penalty(x[1])))[0]
                 best_score, best_sequence, _, _, _ = completed_sequences
                 best_sequence = [step.item() for step in best_sequence[1:]]
                 predict.append(best_sequence)
                 
         return predict
-    
+        
     def get_ngram(self, n, sentence):
         ngrams = []
         for i in range(len(sentence)-n+1):
@@ -155,7 +187,7 @@ class TestRNN:
         total_bleu_score /= len(predict)
         total_bleu_score *= 100
         return total_bleu_score
-
+    
     def perplexity(self, model, device):
         test_cost = 0
         test_ppl = 0
@@ -180,28 +212,51 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--reverse", action=argparse.BooleanOptionalAction, help='reverse or not') # --reverse True, --no-reverse False
     parser.add_argument("--dropout", action=argparse.BooleanOptionalAction, help='dropout or not') # --dropout True, --no-dropout False
+    parser.add_argument("--input_feeding", action=argparse.BooleanOptionalAction, help='input feeding or not')
+    parser.add_argument("--attn", choices=['global', 'local_m', 'local_p', 'no'])
+    parser.add_argument("--align", choices=['dot', 'general', 'concat', 'location', 'no'])
+    parser.add_argument("--name")
     parser.add_argument("--device")
     option = parser.parse_args()
-    
-    name = "np_base"
+
+    config.device = option.device
+    device = option.device
+
+    # name = "np_v2_base"
+    name = option.name
+
     if option.reverse:
-        name += "reverse"
+        name += "_reverse"
         print("Reverse ready")
 
     dropout = 0
     if option.dropout:
-        name += "dropout"
+        name += "_dropout"
         dropout = config.dropout_rate
         config.max_epoch = 12
         config.lr_update_point = 8
         print(f"{dropout} - Dropout ready")
 
+    if option.input_feeding:
+        name += "_infeed"
+        
+    if option.attn == 'no':
+        pass
+    else:
+        name += "_"+option.attn
+        
+    if option.align == 'no':
+        pass
+    else:
+        name += "_"+option.align
+        
     print(f"System:{name} is ready!!")
 
-    training_src_path = "../dataset/training/training_en_.txt"
-    training_tgt_path = "../dataset/training/training_de_.txt"
-    test_src_path = "../dataset/test/test_en_2014.txt"
-    test_tgt_path = "../dataset/test/test_de_2014.txt"
+
+    training_src_path = "../dataset/training/new_training_en.txt"
+    training_tgt_path = "../dataset/training/new_training_de.txt"
+    test_src_path = "../dataset/test/new_test_cost_en.txt"
+    test_tgt_path = "../dataset/test/new_test_cost_de.txt"
 
     train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
     test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
@@ -211,15 +266,16 @@ if __name__ == "__main__":
     
     model_info = torch.load(f"./save_model/{name}_CheckPoint.pth", map_location=option.device)
     # model = model_info['model']
-    model = Seq2Seq(src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
-                    num_layers = config.num_layers, dropout = dropout).to(option.device)
+    model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
+                src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
+                num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
     model.load_state_dict(model_info['model_state_dict'])
     model.eval()
     
     test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
-    print("Start greedy search!!")
-    greedy_predict = test_ins.greedy_search(model, option.device)
-    greedy_bleu_score = test_ins.bleu_score(greedy_predict)
+    # print("Start greedy search!!")
+    # greedy_predict = test_ins.greedy_search(model, option.device)
+    # greedy_bleu_score = test_ins.bleu_score(greedy_predict)
     print("Start beam search!!")
     beam_predict = test_ins.beam_search(model, option.device, beam_size=12)
     beam_bleu_score = test_ins.bleu_score(beam_predict)
@@ -230,5 +286,21 @@ if __name__ == "__main__":
     print(' '.join(list(map(lambda x:train_data.tgt_id2word[x], test_ins.tgt[-1][1:-1]))))
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
-    print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
+
+    # print("write ref/hyp file ... ")
+    # hyp_file_name = "./beam_predict"
+    # fhyp = open(hyp_file_name, "wb")
+    # for hyp in beam_predict:
+    #     fhyp.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], hyp))).encode('utf-8'))
+    #     fhyp.write("\n".encode('utf-8'))
+    # fhyp.close()
+
+    # target_file_name = "./target"
+    # ftarget = open(target_file_name, "wb")
+    # for target in test_ins.tgt:
+    #     ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target))).encode('utf-8'))
+    #     ftarget.write("\n".encode('utf-8'))
+    # ftarget.close()
+    
+    # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
     test_ins.perplexity(model, option.device)

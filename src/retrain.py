@@ -22,10 +22,10 @@ parser.add_argument("--device")
 option = parser.parse_args()
 
 config.device = option.device
+device = option.device
 
 # name = "np_v2_base"
 name = option.name
-device = option.device
 
 if option.reverse:
     name += "_reverse"
@@ -54,15 +54,16 @@ else:
     
 print(f"System:{name} is ready!!")
 
-training_src_path = "../dataset/training/np_training_en.txt"
-training_tgt_path = "../dataset/training/np_training_de.txt"
-test_src_path = "../dataset/test/test_cost_en.txt"
-test_tgt_path = "../dataset/test/test_cost_de.txt"
+training_src_path = "../dataset/training/new_training_en.txt"
+training_tgt_path = "../dataset/training/new_training_de.txt"
+test_src_path = "../dataset/test/new_test_cost_en.txt"
+test_tgt_path = "../dataset/test/new_test_cost_de.txt"
 
 train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
 test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
 
-test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
+test_ins= TestRNN(filtered_test_src=test_data.filtered_src, filtered_test_tgt=test_data.filtered_tgt,
+                  train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id, is_reverse=option.reverse)
 
 train_dataset = CustomDataset(src = train_data.filtered_src, tgt = train_data.filtered_tgt, 
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
@@ -83,10 +84,11 @@ model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feedin
                 src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
                 num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
 
+model.load_state_dict(model_info['model_state_dict'])
+
 with torch.no_grad():
     model.encoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
     model.decoder.embedding_layer.weight[config.PAD] = torch.zeros(config.dimension).to(device)
-model.load_state_dict(model_info['model_state_dict'])
 
 loss_function = nn.CrossEntropyLoss(ignore_index = config.PAD).to(device)
 optimizer = torch.optim.SGD(params = model.parameters(), lr = config.start_lr)
@@ -112,6 +114,8 @@ for epoch in range(model_info['epoch']+1, config.max_epoch):
         loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.normalized_gradient)
+        nn.utils.clip_grad_value_(model.encoder.lstm_layer.parameters(), clip_value=config.clipBackward)
+        nn.utils.clip_grad_value_(model.decoder.lstm_layer.parameters(), clip_value=config.clipBackward)
         optimizer.step()
         
         train_loss += loss.detach().cpu().item()
