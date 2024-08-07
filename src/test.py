@@ -98,7 +98,7 @@ class TestRNN:
                 packed_emb = pack_padded_sequence(input=emb, lengths=encoder_input_len, batch_first=True, enforce_sorted=False)
                 # model.encoder.lstm_layer.flatten_parameters()
                 packed_output, (h_n, c_n) = model.encoder.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
-                encoder_outputs, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=config.MAX_LENGTH+2)
+                encoder_outputs, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=encoder_input_len)
                 decoder_h_0 = torch.clamp(h_n, min=-config.clipForward, max=config.clipForward)
                 decoder_c_0 = torch.clamp(c_n, min=-config.clipForward, max=config.clipForward)
                 
