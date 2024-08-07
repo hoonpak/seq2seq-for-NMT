@@ -107,8 +107,8 @@ class TestRNN:
                 
                 beam = [(0.0, [decoder_input], decoder_h_0, decoder_c_0, attn_vec)]
                 completed_sequences = []
-                
-                for time_step in range(config.MAX_LENGTH+1):
+                max_gen_length = round(len(src_sen)*1.5)
+                for time_step in range(max_gen_length):
                     new_beam = []
                     for score, sequence, decoder_h, decoder_c, attn_vec in beam:
                         decoder_input = sequence[-1]
@@ -264,8 +264,12 @@ if __name__ == "__main__":
     test_tgt_path = "../dataset/test/test_cost_de.txt"
 
     train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
-    test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
-    
+    # test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
+    with open(test_src_path, "r") as file:
+        src_lines = file.readlines()
+    with open(test_tgt_path, "r") as file:
+        tgt_lines = file.readlines()
+        
     src_vocab_size = len(train_data.src_word2id)
     tgt_vocab_size = len(train_data.tgt_word2id)
     
@@ -277,7 +281,7 @@ if __name__ == "__main__":
     model.load_state_dict(model_info['model_state_dict'])
     model.eval()
     
-    test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
+    test_ins= TestRNN(src_lines, tgt_lines, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
     # print("Start greedy search!!")
     # greedy_predict = test_ins.greedy_search(model, option.device)
     # greedy_bleu_score = test_ins.bleu_score(greedy_predict)
