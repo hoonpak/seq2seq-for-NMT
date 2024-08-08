@@ -31,7 +31,7 @@ class Encoder(nn.Module):
     def __init__(self, vocab_size, hidden_size, num_layers, dropout):
         super(Encoder, self).__init__()
         self.embedding_layer = nn.Embedding(num_embeddings=vocab_size, embedding_dim=hidden_size, padding_idx=config.PAD)
-        self.dropout = nn.Dropout(p=dropout)
+        # self.dropout = nn.Dropout(p=dropout)
         self.lstm_layer = nn.LSTM(input_size=hidden_size, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout, batch_first=True)
         
     def forward(self, encoder_input, lengths):
@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         c_0   (num of layers, N, H)
         """
         emb = self.embedding_layer(encoder_input) #batch size, max lenth, dimension
-        emb = self.dropout(emb)
+        # emb = self.dropout(emb)
         packed_emb = pack_padded_sequence(input=emb, lengths=lengths, batch_first=True, enforce_sorted=False)
         packed_output, (h_n, c_n) = self.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
         output, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=config.MAX_LENGTH+2)
@@ -62,7 +62,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         
         self.embedding_layer = nn.Embedding(vocab_size, hidden_size, padding_idx=config.PAD)
-        self.dropout = nn.Dropout(p=dropout)
+        # self.dropout = nn.Dropout(p=dropout)
         
         if input_feeding:
             self.lstm_layer = nn.LSTM(2*hidden_size, hidden_size, num_layers=num_layers, dropout=dropout, batch_first=True)
@@ -109,7 +109,7 @@ class Decoder(nn.Module):
         """
         N, L, H = encoder_outputs.shape
         emb = self.embedding_layer(decoder_input) #N, 1, H
-        emb = self.dropout(emb)
+        # emb = self.dropout(emb)
         if self.input_feeding:
             emb = torch.cat((emb, attn_vec), dim=2)
         output_t, (h_t, c_t) = self.lstm_layer(emb, (hidden, cell))

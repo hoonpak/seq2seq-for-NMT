@@ -22,13 +22,14 @@ class Score:
         def __init__(self, hidden_size):
             super(Score.general, self).__init__()
             self.W_a = nn.Linear(hidden_size, hidden_size, bias=False)
+            self.tanh = nn.Tanh()
             
         def forward(self, decoder_h_t, encoder_outputs):
             """
             encoder_outputs  (N, L, H)
             decoder_h_t      (N, 1, H)
             """
-            decoder_h_t = self.W_a(decoder_h_t) #N, 1, H
+            decoder_h_t = self.tanh(self.W_a(decoder_h_t)) #N, 1, H
             score4align = torch.bmm(decoder_h_t, encoder_outputs.permute(0,2,1)) #(N, 1, H) * (N, H, L) -> (N, 1, L)
             return score4align
         

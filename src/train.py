@@ -116,8 +116,8 @@ for epoch in range(config.max_epoch):
         loss = loss_function(predict, tgt[:,1:].reshape(-1))
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.normalized_gradient)
-        nn.utils.clip_grad_value_(model.encoder.lstm_layer.parameters(), clip_value=config.clipBackward)
-        nn.utils.clip_grad_value_(model.decoder.lstm_layer.parameters(), clip_value=config.clipBackward)
+        # nn.utils.clip_grad_value_(model.encoder.lstm_layer.parameters(), clip_value=config.clipBackward)
+        # nn.utils.clip_grad_value_(model.decoder.lstm_layer.parameters(), clip_value=config.clipBackward)
         optimizer.step()
         
         train_loss += loss.detach().cpu().item()

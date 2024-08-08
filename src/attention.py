@@ -26,13 +26,13 @@ class Attention(nn.Module):
             p_t = p_t.to(config.device)
             attn_start = p_t - config.window_size
             attn_end = p_t + config.window_size
-            exc_start_index = (attn_start < src_start)
-            exc_end_index = (attn_end > src_end)
-            attn_start[exc_start_index] = src_start
-            if self.attn_type == 'local_p':
-                attn_end[exc_end_index] = src_end[exc_end_index].to(torch.float32)
-            else:
-                attn_end[exc_end_index] = src_end[exc_end_index]
+            exc_start_index = (attn_start < src_start) # if under 0
+            exc_end_index = (attn_end > src_end) # if upper src_len
+            attn_start[exc_start_index] = src_start # if under 0, change it to 0
+            # if self.attn_type == 'local_p':
+            attn_end[exc_end_index] = src_end[exc_end_index].to(torch.float32) # if upper src_len, change it to sentence length
+            # else:
+            #     attn_end[exc_end_index] = src_end[exc_end_index]
             src_start = attn_start
             src_end = attn_end
         length_vec = self.index_matrix.repeat(N,1) # N, L
@@ -56,7 +56,8 @@ class Attention(nn.Module):
         
     def gaussian(self, time_steps, N):
         length_vec = self.index_matrix.repeat(N, 1) # eq 11: s // N, L
-        pow_sub = torch.pow(torch.sub(length_vec, time_steps.unsqueeze(-1)), 2) #time_step: real number
+        pow_sub = torch.pow(torch.sub(length_vec, time_steps.unsqueeze(-1)), 2) #time_step: real number # before modified -> if shape of time step is (N, )
+        # pow_sub = torch.pow((length_vec - time_steps), 2) #time_step: real numberb -> if shape of time step is (N, 1)
         div = torch.mul(-1, torch.div(pow_sub, self.dev_pow))
         output = torch.exp(div)
         return output # N,L
