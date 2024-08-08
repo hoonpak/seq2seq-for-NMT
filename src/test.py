@@ -307,7 +307,7 @@ if __name__ == "__main__":
     target_file_name = "./target"
     ftarget = open(target_file_name, "wb")
     for target in test_ins.tgt:
-        ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target))).encode('utf-8'))
+        ftarget.write(' '.join(list(map(lambda x:train_data.tgt_id2word[x], target[1:-1]))).encode('utf-8'))
         ftarget.write("\n".encode('utf-8'))
     ftarget.close()
     
