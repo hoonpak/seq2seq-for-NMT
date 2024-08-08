@@ -214,6 +214,7 @@ if __name__ == "__main__":
     parser.add_argument("--reverse", action=argparse.BooleanOptionalAction, help='reverse or not') # --reverse True, --no-reverse False
     parser.add_argument("--dropout", action=argparse.BooleanOptionalAction, help='dropout or not') # --dropout True, --no-dropout False
     parser.add_argument("--input_feeding", action=argparse.BooleanOptionalAction, help='input feeding or not')
+    parser.add_argument("--sensitive", action=argparse.BooleanOptionalAction, help='sesitive or not')
     parser.add_argument("--attn", choices=['global', 'local_m', 'local_p', 'no'])
     parser.add_argument("--align", choices=['dot', 'general', 'concat', 'location', 'no'])
     parser.add_argument("--name")
@@ -222,7 +223,7 @@ if __name__ == "__main__":
 
     config.device = option.device
     device = option.device
-
+    sensitive = option.sensitive
     # name = "np_v2_base"
     name = option.name
 
@@ -263,8 +264,8 @@ if __name__ == "__main__":
     test_src_path = "../dataset/test/test_cost_en.txt"
     test_tgt_path = "../dataset/test/test_cost_de.txt"
 
-    train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
-    test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
+    train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sensitive = sensitive)
+    test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)
     # with open(test_src_path, "r") as file:
     #     src_lines = file.readlines()
     # with open(test_tgt_path, "r") as file:

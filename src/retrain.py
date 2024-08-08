@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--reverse", action=argparse.BooleanOptionalAction, help='reverse or not') # --reverse True, --no-reverse False
 parser.add_argument("--dropout", action=argparse.BooleanOptionalAction, help='dropout or not') # --dropout True, --no-dropout False
 parser.add_argument("--input_feeding", action=argparse.BooleanOptionalAction, help='input feeding or not')
+parser.add_argument("--sensitive", action=argparse.BooleanOptionalAction, help='sesitive or not')
 parser.add_argument("--attn", choices=['global', 'local_m', 'local_p', 'no'])
 parser.add_argument("--align", choices=['dot', 'general', 'concat', 'location', 'no'])
 parser.add_argument("--name")
@@ -23,7 +24,7 @@ option = parser.parse_args()
 
 config.device = option.device
 device = option.device
-
+sensitive = option.sensitive
 # name = "np_v2_base"
 name = option.name
 
@@ -63,18 +64,18 @@ training_tgt_path = "../dataset/training/np_training_de.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
-train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True)
-test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False)
+train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sentsitive = sensitive)
+test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sentsitive = sensitive)
 
 test_ins= TestRNN(filtered_test_src=test_data.filtered_src, filtered_test_tgt=test_data.filtered_tgt,
                   train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id, is_reverse=option.reverse)
 
 train_dataset = CustomDataset(src = train_data.filtered_src, tgt = train_data.filtered_tgt, 
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
-                            is_reverse = option.reverse)
+                            is_sensitive = sensitive, is_reverse = option.reverse)
 test_dataset = CustomDataset(src = test_data.filtered_src, tgt = test_data.filtered_tgt, 
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
-                            is_reverse = option.reverse)
+                            is_sensitive = sensitive, is_reverse = option.reverse)
 
 train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
@@ -83,10 +84,10 @@ src_vocab_size = len(train_data.src_word2id)
 tgt_vocab_size = len(train_data.tgt_word2id)
 
 model_info = torch.load(f"./save_model/{name}_CheckPoint.pth", map_location=device)
-# model = model_info['model']
-model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
-                src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
-                num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
+model = model_info['model'].to(device)
+# model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
+#                 src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
+#                 num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
 
 model.load_state_dict(model_info['model_state_dict'])
 
