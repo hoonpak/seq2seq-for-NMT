@@ -64,8 +64,8 @@ training_tgt_path = "../dataset/training/np_training_de.txt"
 test_src_path = "../dataset/test/test_cost_en.txt"
 test_tgt_path = "../dataset/test/test_cost_de.txt"
 
-train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sentsitive = sensitive)
-test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sentsitive = sensitive)
+train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sensitive = sensitive)
+test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)
 
 test_ins= TestRNN(filtered_test_src=test_data.filtered_src, filtered_test_tgt=test_data.filtered_tgt,
                   train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id,
