@@ -68,7 +68,8 @@ train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_p
 test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)
 
 test_ins= TestRNN(filtered_test_src=test_data.filtered_src, filtered_test_tgt=test_data.filtered_tgt,
-                  train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id, is_reverse=option.reverse)
+                  train_src_word2id=train_data.src_word2id, train_tgt_word2id=train_data.tgt_word2id,
+                  is_sensitive = sensitive, is_reverse=option.reverse)
 
 train_dataset = CustomDataset(src = train_data.filtered_src, tgt = train_data.filtered_tgt, 
                             src_word2id = train_data.src_word2id, tgt_word2id = train_data.tgt_word2id,
