@@ -55,14 +55,14 @@ else:
     
 print(f"System:{name} is ready!!")
 
-# training_src_path = "../dataset/training/new_training_en.txt"
-# training_tgt_path = "../dataset/training/new_training_de.txt"
-# test_src_path = "../dataset/test/new_test_cost_en.txt"
-# test_tgt_path = "../dataset/test/new_test_cost_de.txt"
-training_src_path = "../dataset/training/np_training_en.txt"
-training_tgt_path = "../dataset/training/np_training_de.txt"
-test_src_path = "../dataset/test/test_cost_en.txt"
-test_tgt_path = "../dataset/test/test_cost_de.txt"
+training_src_path = "../dataset/training/new_training_en.txt"
+training_tgt_path = "../dataset/training/new_training_de.txt"
+test_src_path = "../dataset/test/new_test_cost_en.txt"
+test_tgt_path = "../dataset/test/new_test_cost_de.txt"
+# training_src_path = "../dataset/training/np_training_en.txt"
+# training_tgt_path = "../dataset/training/np_training_de.txt"
+# test_src_path = "../dataset/test/test_cost_en.txt"
+# test_tgt_path = "../dataset/test/test_cost_de.txt"
 
 train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sensitive = sensitive)
 test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)
@@ -106,7 +106,7 @@ train_loss = 0
 train_ppl = 0
 print("Start training!!")
 # iter = 32248*(model_info['epoch']+1)
-iter = 32413*(model_info['epoch']+1)
+iter = 32237*(model_info['epoch']+1)
 for epoch in range(model_info['epoch']+1, config.max_epoch):
     for src, src_len, tgt in train_dataloader:
         # breakpoint()

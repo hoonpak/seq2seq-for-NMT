@@ -39,7 +39,7 @@ class TestRNN:
                 encoder_input_len = [len(src_sen)]
                 
                 emb = model.encoder.embedding_layer(encoder_input) #batch size, max lenth, dimension
-                emb = model.encoder.dropout(emb)
+                # emb = model.encoder.dropout(emb)
                 packed_emb = pack_padded_sequence(input=emb, lengths=encoder_input_len, batch_first=True, enforce_sorted=False)
                 # model.encoder.lstm_layer.flatten_parameters()
                 packed_output, (h_n, c_n) = model.encoder.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
@@ -94,7 +94,7 @@ class TestRNN:
                 encoder_input_len = [len(src_sen)]
                 
                 emb = model.encoder.embedding_layer(encoder_input) #batch size, max lenth, dimension
-                emb = model.encoder.dropout(emb)
+                # emb = model.encoder.dropout(emb)
                 packed_emb = pack_padded_sequence(input=emb, lengths=encoder_input_len, batch_first=True, enforce_sorted=False)
                 # model.encoder.lstm_layer.flatten_parameters()
                 packed_output, (h_n, c_n) = model.encoder.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
@@ -255,14 +255,14 @@ if __name__ == "__main__":
     print(f"System:{name} is ready!!")
 
 
-    # training_src_path = "../dataset/training/new_training_en.txt"
-    # training_tgt_path = "../dataset/training/new_training_de.txt"
-    # test_src_path = "../dataset/test/new_test_cost_en.txt"
-    # test_tgt_path = "../dataset/test/new_test_cost_de.txt"
-    training_src_path = "../dataset/training/np_training_en.txt"
-    training_tgt_path = "../dataset/training/np_training_de.txt"
-    test_src_path = "../dataset/test/test_cost_en.txt"
-    test_tgt_path = "../dataset/test/test_cost_de.txt"
+    training_src_path = "../dataset/training/new_training_en.txt"
+    training_tgt_path = "../dataset/training/new_training_de.txt"
+    test_src_path = "../dataset/test/new_test_cost_en.txt"
+    test_tgt_path = "../dataset/test/new_test_cost_de.txt"
+    # training_src_path = "../dataset/training/np_training_en.txt"
+    # training_tgt_path = "../dataset/training/np_training_de.txt"
+    # test_src_path = "../dataset/test/test_cost_en.txt"
+    # test_tgt_path = "../dataset/test/test_cost_de.txt"
 
     train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sensitive = sensitive)
     test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)

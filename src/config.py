@@ -23,4 +23,4 @@ window_size = 10
 dev_pow = 50
 
 device = 'cpu'
-#1 epoch에 32413 iter
+#1 epoch에 32237 iter
