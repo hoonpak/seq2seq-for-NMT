@@ -7,19 +7,23 @@ import config
 from attention import Attention
 
 class PositionRegression(nn.Module):
-    def __init__(self, hidden_size):
+    def __init__(self, hidden_size, is_reverse):
         super(PositionRegression, self).__init__()
         self.W_p = nn.Linear(hidden_size, hidden_size, bias=False)
         self.tanh = nn.Tanh()
         self.v_p = nn.Linear(hidden_size, 1, bias=False)
         self.sigmoid = nn.Sigmoid()
+        self.is_reverse = is_reverse
         
     def forward(self, output, src_len):
         src_len = src_len.to(config.device)
         w_p_out = self.W_p(output)
         tanh_out = self.tanh(w_p_out)
         v_p_out = self.v_p(tanh_out)
-        sig_out = self.sigmoid(v_p_out).squeeze()
+        if self.is_reverse:
+            sig_out = 1 - self.sigmoid(v_p_out).squeeze()
+        else :
+            sig_out = self.sigmoid(v_p_out).squeeze()
         position = torch.mul(src_len, sig_out)
         return position
     
@@ -72,7 +76,7 @@ class Decoder(nn.Module):
         if attn_type != 'no':
             self.attn_layer = Attention(hidden_size, attn_type, align_type)
             if attn_type == "local_p":
-                self.position_layer = PositionRegression(hidden_size)
+                self.position_layer = PositionRegression(hidden_size, is_reverse)
         
         self.output_layer = nn.Linear(hidden_size, vocab_size, bias=False)
         
