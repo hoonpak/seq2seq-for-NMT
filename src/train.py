@@ -59,10 +59,6 @@ training_src_path = "../dataset/training/new_training_en.txt"
 training_tgt_path = "../dataset/training/new_training_de.txt"
 test_src_path = "../dataset/test/new_test_cost_en.txt"
 test_tgt_path = "../dataset/test/new_test_cost_de.txt"
-# training_src_path = "../dataset/training/np_training_en.txt"
-# training_tgt_path = "../dataset/training/np_training_de.txt"
-# test_src_path = "../dataset/test/test_cost_en.txt"
-# test_tgt_path = "../dataset/test/test_cost_de.txt"
 
 train_data = PrepareData(src_path = training_src_path, tgt_path = training_tgt_path, is_train = True, is_sensitive = sensitive)
 test_data = PrepareData(src_path = test_src_path, tgt_path = test_tgt_path, is_train = False, is_sensitive = sensitive)
@@ -145,7 +141,6 @@ for epoch in range(config.max_epoch):
                     src = src.to(device)
                     tgt = tgt.to(device)
                     predict = model.forward(src=src, src_len=src_len, tgt=tgt)
-                    # loss = loss_function(predict, tgt[:,1:])
                     loss = loss_function(predict, tgt[:,1:].reshape(-1))
                     test_cost += loss.detach().cpu().item()
                     test_ppl += torch.exp(loss.detach()).cpu().item()
@@ -169,9 +164,6 @@ for epoch in range(config.max_epoch):
                 'iter': iter,
                 }, f"./save_model/{name}_CheckPoint.pth")
     
-    # print("Start greedy search!!")
-    # greedy_predict = test_ins.greedy_search(model, device)
-    # greedy_bleu_score = test_ins.bleu_score(greedy_predict)
     print("Start beam search!!")
     beam_predict = test_ins.beam_search(model, device, beam_size=5)
     beam_bleu_score = test_ins.bleu_score(beam_predict)
@@ -182,6 +174,5 @@ for epoch in range(config.max_epoch):
     print(' '.join(list(map(lambda x:train_data.tgt_id2word[x], test_ins.tgt[-1][1:-1]))))
     print("="*50)
     print(f"{name} beam bleu score : {beam_bleu_score:.2f}")
-    # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
     test_ins.perplexity(model, device)
     model.train()

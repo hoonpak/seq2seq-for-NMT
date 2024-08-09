@@ -275,17 +275,14 @@ if __name__ == "__main__":
     tgt_vocab_size = len(train_data.tgt_word2id)
     
     model_info = torch.load(f"./save_model/{name}_CheckPoint.pth", map_location=option.device)
-    # model = model_info['model']
-    model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
-                src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
-                num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
+    model = model_info['model']
+    # model = Seq2Seq(attn_type = option.attn, align_type = option.align, input_feeding = option.input_feeding, 
+    #             src_vocab_size = src_vocab_size, tgt_vocab_size = tgt_vocab_size, hidden_size = config.dimension, 
+    #             num_layers = config.num_layers, dropout = dropout, is_reverse = option.reverse).to(device)
     model.load_state_dict(model_info['model_state_dict'])
     model.eval()
     
     test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
-    # print("Start greedy search!!")
-    # greedy_predict = test_ins.greedy_search(model, option.device)
-    # greedy_bleu_score = test_ins.bleu_score(greedy_predict)
     print("Start beam search!!")
     beam_predict = test_ins.beam_search(model, option.device, beam_size=12)
     beam_bleu_score = test_ins.bleu_score(beam_predict)
@@ -314,5 +311,4 @@ if __name__ == "__main__":
     
     os.system("./multi-bleu.perl -lc target < beam_predict")
     
-    # print(f"{name} greedy bleu score : {greedy_bleu_score:.2f}")
     test_ins.perplexity(model, option.device)
