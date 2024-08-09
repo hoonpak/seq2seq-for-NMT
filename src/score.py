@@ -29,6 +29,7 @@ class Score:
             encoder_outputs  (N, L, H)
             decoder_h_t      (N, 1, H)
             """
+            # decoder_h_t = self.tanh(self.W_a(decoder_h_t)) #N, 1, H
             decoder_h_t = self.W_a(decoder_h_t) #N, 1, H
             score4align = torch.bmm(decoder_h_t, encoder_outputs.permute(0,2,1)) #(N, 1, H) * (N, H, L) -> (N, 1, L)
             return score4align
