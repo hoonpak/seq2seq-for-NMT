@@ -282,7 +282,7 @@ if __name__ == "__main__":
     model.load_state_dict(model_info['model_state_dict'])
     model.eval()
     
-    test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, option.reverse)
+    test_ins= TestRNN(test_data.filtered_src, test_data.filtered_tgt, train_data.src_word2id, train_data.tgt_word2id, sensitive, option.reverse)
     print("Start beam search!!")
     beam_predict = test_ins.beam_search(model, option.device, beam_size=12)
     beam_bleu_score = test_ins.bleu_score(beam_predict)
