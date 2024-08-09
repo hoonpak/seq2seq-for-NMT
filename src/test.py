@@ -22,8 +22,8 @@ class TestRNN:
     def __init__(self, filtered_test_src, filtered_test_tgt, train_src_word2id, train_tgt_word2id, is_sensitive, is_reverse):
         self.src_word2id = train_src_word2id
         self.tgt_word2id = train_tgt_word2id
-        self.src = list(map(lambda x:get_tokenized_sen(x,self.src_word2id,is_reverse, is_sensitive), filtered_test_src)) #no padding
-        self.tgt = list(map(lambda x:get_tokenized_sen(x,self.tgt_word2id,False, is_sensitive), filtered_test_tgt))
+        self.src = list(map(lambda x:get_tokenized_sen(x,self.src_word2id, is_sensitive, is_reverse), filtered_test_src)) #no padding
+        self.tgt = list(map(lambda x:get_tokenized_sen(x,self.tgt_word2id, is_sensitive, False), filtered_test_tgt))
         self.test_dataset = CustomDataset(src = filtered_test_src, tgt = filtered_test_tgt, 
                                         src_word2id = train_src_word2id, tgt_word2id = train_tgt_word2id,
                                         is_sensitive = is_sensitive, is_reverse = is_reverse)

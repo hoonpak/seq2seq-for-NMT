@@ -51,7 +51,7 @@ class PrepareData:
         
         for sen in tqdm(lines):
             for token in sen.split():
-                if self.is_sensitive:
+                if not self.is_sensitive:
                     token = token.lower() #
                 counter[token] += 1
 
@@ -69,7 +69,7 @@ def get_tokenized_sen(sen, word2id, is_sensitive, is_reverse):
     tokenized_sen = [2] #<s>
         
     for token in sen.split():
-        if is_sensitive:
+        if not is_sensitive:
             token = token.lower() #
         if token in word2id:
             tokenized_sen.append(word2id[token])
