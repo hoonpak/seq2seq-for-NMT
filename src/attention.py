@@ -56,8 +56,12 @@ class Attention(nn.Module):
         
     def gaussian(self, time_steps, N):
         length_vec = self.index_matrix.repeat(N, 1) # eq 11: s // N, L
-        pow_sub = torch.pow(torch.sub(length_vec, time_steps.unsqueeze(-1)), 2) #time_step: real number # before modified -> if shape of time step is (N, )
-        # pow_sub = torch.pow((length_vec - time_steps), 2) #time_step: real numberb -> if shape of time step is (N, 1)
+        if time_steps.dim() == 1:
+            pow_sub = torch.pow(torch.sub(length_vec, time_steps.unsqueeze(-1)), 2) #time_step: real number # before modified -> if shape of time step is (N, )
+        elif time_steps.dim() == 2:
+            pow_sub = torch.pow((length_vec - time_steps), 2) #time_step: real numberb -> if shape of time step is (N, 1)
+        else:
+            raise Exception('check your time steps dimensions.')
         div = torch.mul(-1, torch.div(pow_sub, self.dev_pow))
         output = torch.exp(div)
         return output # N,L
