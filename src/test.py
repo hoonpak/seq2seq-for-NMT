@@ -44,8 +44,8 @@ class TestRNN:
                 # model.encoder.lstm_layer.flatten_parameters()
                 packed_output, (h_n, c_n) = model.encoder.lstm_layer(packed_emb) #it's the result of to compute every step each layers.
                 encoder_outputs, _ = pad_packed_sequence(packed_output, batch_first=True, total_length=config.MAX_LENGTH+2)
-                decoder_h_0 = torch.clamp(h_n, min=-config.clipForward, max=config.clipForward)
-                decoder_c_0 = torch.clamp(c_n, min=-config.clipForward, max=config.clipForward)
+                decoder_h = torch.clamp(h_n, min=-config.clipForward, max=config.clipForward)
+                decoder_c = torch.clamp(c_n, min=-config.clipForward, max=config.clipForward)
                 
                 decoder_input = torch.LongTensor([2]).reshape(1,-1).to(device) # SOS Token -> 1
                 attn_vec = torch.zeros(1,1,config.dimension).to(device)
