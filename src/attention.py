@@ -29,10 +29,10 @@ class Attention(nn.Module):
             exc_start_index = (attn_start < src_start) # if under 0
             exc_end_index = (attn_end > src_end) # if upper src_len
             attn_start[exc_start_index] = src_start # if under 0, change it to 0
-            # if self.attn_type == 'local_p':
-            attn_end[exc_end_index] = src_end[exc_end_index].to(torch.float32) # if upper src_len, change it to sentence length
-            # else:
-            #     attn_end[exc_end_index] = src_end[exc_end_index]
+            if self.attn_type == 'local_p':
+                attn_end[exc_end_index] = src_end[exc_end_index].to(torch.float32) # if upper src_len, change it to sentence length
+            else:
+                attn_end[exc_end_index] = src_end[exc_end_index]
             src_start = attn_start
             src_end = attn_end
         length_vec = self.index_matrix.repeat(N,1) # N, L
